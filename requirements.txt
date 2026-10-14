@@ -1,0 +1,7 @@
+# Dependências diretas, nas versões utilizadas no desenvolvimento local.
+numpy==2.0.2
+nibabel==5.3.3
+matplotlib==3.9.4
+scipy==1.13.1
+scikit-image==0.24.0
+pandas==2.3.3

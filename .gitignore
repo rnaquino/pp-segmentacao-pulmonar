@@ -1,0 +1,27 @@
+# Ambiente Python e caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Arquivos locais do sistema e segredos de configuração
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+
+# Dados: versionar apenas o inventário e as instruções de obtenção
+/data/*
+!/data/manifest.csv
+!/data/README.md
+
+# Imagens médicas, mesmo se copiadas para outra pasta
+*.nii
+*.nii.gz
+*.dcm
+
+# Resultados locais dos experimentos
+/results/

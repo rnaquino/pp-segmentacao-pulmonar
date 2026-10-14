@@ -1,3 +1,18 @@
+"""Cria uma máscara candidata por limiar fixo em uma fatia da tomografia.
+
+Carrega e extrai a fatia usando src.preprocessing. Cada pixel com
+intensidade menor que --limiar recebe True na máscara; os demais recebem
+False. Mostra a tomografia e a máscara lado a lado e imprime a quantidade
+de pixels selecionados. Sem --fatia, usa a fatia central.
+
+Exemplo para Coronacases em HU:
+    python segmentacao_inicial.py data/raw/coronacases_001.nii.gz --fatia 150 --limiar -400
+
+O limiar padrão é -400 HU. O ar externo e outros espaços de ar também
+podem ser selecionados: não há remoção de componentes nem morfologia.
+Esses limiares em HU não se aplicam diretamente aos Radiopaedia.
+"""
+
 import argparse
 
 import matplotlib.pyplot as plt

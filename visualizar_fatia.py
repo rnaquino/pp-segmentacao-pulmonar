@@ -1,10 +1,15 @@
-"""Mostra uma fatia de uma tomografia NIfTI.
+"""Mostra uma única fatia de uma tomografia NIfTI em tons de cinza.
 
-Exemplo:
+O módulo de pré-processamento carrega o exame, aproxima os eixos de RAS
+e extrai a fatia solicitada. Sem --fatia, usa o corte central do volume.
+A exibição mantém a proporção entre os espaçamentos dos eixos da fatia.
+
+Exemplo para Coronacases em HU:
     python visualizar_fatia.py data/raw/coronacases_001.nii.gz --fatia 150
 
-Os limites padrão são para imagens em HU. Para dados normalizados,
-ajuste --vmin e --vmax à escala encontrada no arquivo.
+--vmin e --vmax definem a janela de visualização, sem alterar intensidades.
+Os padrões são -1000 e 400. Para Radiopaedia na escala 0–255, use
+--vmin 0 --vmax 255. Este script não segmenta nem exibe máscaras.
 """
 
 import argparse

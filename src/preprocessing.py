@@ -1,8 +1,22 @@
-"""Leitura e preparação de imagens e referências NIfTI.
+"""Reúne funções reutilizáveis de leitura e preparação dos dados NIfTI.
 
-Este módulo não segmenta imagens. Preserva intensidades ao ler os arquivos;
-janelamento/normalização só acontecem quando aplicar_janela é chamado.
-A canonicalização aproxima os eixos de RAS, sem corrigir obliquidade.
+carregar_imagem lê um exame 3D e aproxima seus eixos de RAS, sem corrigir
+obliquidade por reamostragem. obter_indice_fatia valida ou escolhe o corte
+central; extrair_fatia devolve os valores 2D em float32 na escala original.
+obter_metadados reúne forma, espaçamento, orientação, unidades e affine.
+
+carregar_mascara lê o volume de rótulos inteiros e pode conferir seu
+alinhamento com a imagem por verificar_alinhamento. Unidades desconhecidas
+não são automaticamente interpretadas como milímetros.
+
+Exemplo de uso em outro script:
+    from src.preprocessing import carregar_imagem, extrair_fatia
+    img = carregar_imagem("data/raw/coronacases_001.nii.gz")
+    fatia = extrair_fatia(img, 150)
+
+aplicar_janela cria uma representação janelada e normalizada para 0–1
+somente quando chamada explicitamente. Preserve os valores originais
+para limiarização em HU. Este módulo não segmenta nem exibe imagens.
 """
 
 from pathlib import Path

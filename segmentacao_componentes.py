@@ -1,10 +1,19 @@
 """Compara limiar fixo e Otsu e remove componentes que tocam a borda.
 
-Exemplo, para um exame Coronacases em HU:
-    python segmentacao_componentes.py data/raw/coronacases_001.nii.gz --fatia 150
+Extrai uma fatia com src.preprocessing e produz duas máscaras: uma com
+--limiar (padrão -400 HU) e outra com Otsu calculado nessa própria fatia.
+Rotula regiões conectadas por lados e diagonais e remove todas as regiões
+que alcançam qualquer borda. A função remover_componentes_da_borda também
+é reutilizada pelo exercício de morfologia.
 
-As regiões restantes são candidatas: ainda não representam uma máscara
-pulmonar final. Este exercício usa componentes conexos em uma fatia 2D.
+Exemplo para Coronacases em HU:
+    python segmentacao_componentes.py data/raw/coronacases_001.nii.gz --fatia 150 --limiar -400
+
+Sem --fatia, usa o corte central. Mostra seis painéis com a tomografia,
+as máscaras antes/depois da remoção e os componentes de Otsu em cores.
+As cores identificam regiões conectadas, não classes anatômicas.
+O processamento é 2D. As regiões internas restantes ainda são candidatas:
+não há seleção anatômica nem refinamento morfológico neste script.
 """
 
 import argparse

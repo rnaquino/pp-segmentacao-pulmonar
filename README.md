@@ -1,6 +1,6 @@
 # Segmentação pulmonar por métodos clássicos
 
-Projeto acadêmico de segmentação pulmonar em tomografia computadorizada, usando limiarização, componentes conexos e operações morfológicas. O desenvolvimento é feito em scripts Python locais; o notebook no Google Colab será preparado ao final.
+Projeto acadêmico de segmentação pulmonar em tomografia computadorizada, usando limiarização, componentes conexos e operações morfológicas.
 
 ## Estado atual
 
@@ -110,30 +110,3 @@ Os scripts exibem figuras; ainda não salvam automaticamente uma tabela de métr
 
 O ambiente existente passou em `python -m pip check`. Os scripts foram executados no exame `coronacases_001`, fatia 150, com renderização sem interface gráfica; a refatoração preservou seus resultados numéricos. O pré-processamento foi exercitado também com dados sintéticos para escala NIfTI, índices, rótulos e alinhamento. Esses testes não representam avaliação do método nos vinte volumes nem confirmação de instalação em um ambiente novo.
 
-## Primeiro envio ao GitHub
-
-Crie no GitHub um repositório vazio, sem README, licença ou `.gitignore` gerados automaticamente, e copie sua URL. O projeto local está preparado para um primeiro commit na branch `main`.
-
-Confira a seleção de arquivos antes de enviar:
-
-```bash
-git status
-git diff --cached --stat
-git commit -m "Organiza projeto de segmentação pulmonar"
-```
-
-Se o Git pedir identificação, configure seu nome e e-mail para este repositório:
-
-```bash
-git config user.name "SEU NOME"
-git config user.email "SEU EMAIL"
-```
-
-Depois conecte o endereço real do repositório e envie. Substitua `URL_DO_REPOSITORIO` pela URL copiada:
-
-```bash
-git remote add origin URL_DO_REPOSITORIO
-git push -u origin main
-```
-
-O envio exige autenticação no GitHub. Após novas alterações, selecione os arquivos pertinentes com `git add`, faça outro commit e use `git push`.

@@ -25,3 +25,9 @@ Thumbs.db
 
 # Resultados locais dos experimentos
 /results/
+
+# Testes locais
+/tests/
+
+# Arquivos temporários e relatórios das conversas
+/conversa_local/

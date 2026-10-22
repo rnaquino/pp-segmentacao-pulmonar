@@ -187,11 +187,47 @@ Mostra a fatia e a máscara de Otsu após remover componentes que tocam a borda.
 
 ### Refinamento morfológico
 
-Mostra apenas a fatia e a máscara final lado a lado, após remover componentes de borda, aplicar fechamento e preencher buracos.
+Mostra apenas a fatia e a máscara final lado a lado, após rastrear/remover a traqueia, remover componentes de borda, aplicar fechamento e preencher buracos.
 
 ```bash
 python segmentacao_morfologia.py data/raw/coronacases_001.nii.gz --metodo otsu --raio 2
 ```
+
+A semente agora é **automática por padrão**. O detector examina do topo para baixo os 40% superiores do volume (segundo a orientação RAS do cabeçalho), sem escolher uma semente abaixo da fatia exibida. Busca componentes de ar internos ao corpo, compactos e próximos da linha central, com área entre 30 mm² e `--area-max-traqueia` (400 mm² por padrão). Usa solidez mínima de 0,75 e razão mínima de 0,19 entre autovalores da distribuição espacial dos pixels. O corpo é estimado das intensidades da própria tomografia; os rótulos das máscaras não participam.
+
+A escolha exige um único candidato com sobreposição, área e posição estáveis em **três fatias consecutivas**. Uma região central maior que o limite também impede aceitar arbitrariamente uma região pequena concorrente. Ausência ou ambiguidade interrompem a execução com uma mensagem para revisar o exame e informar a semente. Não há coordenadas específicas por paciente nem classificação anatômica garantida por esses critérios.
+
+`--semente I J K` continua disponível e tem prioridade: substitua `I J K` por índices inteiros de um ponto **dentro do lúmen da traqueia em um corte superior**, observado no próprio exame. A fonte continua automática e a fatia exibida continua central por padrão. Os índices começam em zero e pertencem à imagem canonicalizada em RAS. Na exibição transposta usada pelos scripts, a coordenada horizontal é `I` e a vertical é `J`. `K` é a fatia da semente, não a fatia que será exibida. Escolha `K >= fatia exibida`; para observar outro corte, use `--fatia`. Essa relação pressupõe que a orientação anatômica declarada no cabeçalho esteja correta.
+
+O rastreamento **2,5D** percorre `K, K-1, ...` até o corte de interesse. Usa a máscara e o centroide da fatia anterior para orientar operações exclusivamente no plano atual:
+
+1. Prepara a fatia em 0–255 e calcula Otsu (padrão) ou limiar fixo.
+2. Delimita uma ROI circular física em torno do centroide anterior (`--roi-mm 20`). Dentro dela, rotula componentes 8-conexos: selecionar os componentes alcançados pela semente/sobreposição equivale a crescimento de região binário. Na primeira fatia usa a semente; nas seguintes exige sobreposição com a máscara anterior e escolhe um ponto interno.
+3. Rejeita componentes que toquem a borda da ROI ou da imagem. Isso impede aceitar como via aérea apenas um recorte artificial do pulmão. Verifica área máxima (400 mm²), aumento de área (até 2 vezes) e deslocamento do centroide (até 5 mm por fatia).
+4. Se houver candidato incompatível, tenta reduzir o limiar em passos de 5, até `--ajuste-limiar-max 30` unidades da escala 0–255. Isso pode desfazer pontes de intensidade intermediária; não altera o limiar da segmentação pulmonar. Zero desliga essa adaptação. Sem continuidade, não pula fatias nem reinicia em outra região.
+5. Aceita uma divisão em **dois ramos** quando ambos sobrepõem a região anterior: cada área deve ser pelo menos `max(3 mm², 15% da área anterior)` e a soma deve ficar entre a área anterior dividida e multiplicada por `--crescimento-max`. Os controles individuais também se aplicam. É uma hipótese geométrica, sem confirmação anatômica da carina nem confirmação temporal adicional da divisão.
+6. Acompanha os dois ramos independentemente, com seus próprios centroides e critérios de parada. Permite somente uma geração de bifurcação; novas divisões encerram o ramo. Se dois rastros ocuparem pixels em comum, interrompe ambos por ambiguidade. Um ramo pode continuar quando o outro para.
+7. Na fatia solicitada, reúne os ramos aceitos e subtrai essa região da máscara pulmonar. Não remove automaticamente os menores componentes internos, pois tamanho isolado não identifica a traqueia e pode excluir pulmão.
+
+Os parâmetros são heurísticos e ainda não foram calibrados por fonte ou espaçamento entre fatias. `--deslocamento-max` é medido em mm por fatia, não por mm de avanço no eixo superior–inferior. O algoritmo não garante exclusão completa dos brônquios nem identificação correta se a semente estiver no componente errado.
+
+Se todos os ramos pararem antes do alvo, nenhuma remoção de vias aéreas é feita nesse corte. Se apenas um chegar, a remoção pode ser parcial. Terminal e JSON registram as paradas. `--registro conversa_local/relatorios/traqueia_25d.json` guarda parâmetros, identificadores/pais dos ramos, centroides, sementes internas e limiares efetivamente usados. O script não salva um volume segmentado.
+
+**Custo computacional:** não faz rotulação, morfologia ou crescimento 3D. Mantém máscaras 2D dos ramos ativos e histórico numérico. Entretanto, o leitor existente usa `nib.as_closest_canonical`, que pode materializar o volume na reorientação; portanto a leitura ainda não tem garantia de memória limitada a poucas fatias.
+
+**Verificação anterior à implementação 2,5D (22/10/2026):** os vinte exames foram executados pela CLI com Otsu e parâmetros padrão, sem semente manual. Houve 17 detecções (10 Coronacases e 7 Radiopaedia), inspecionadas visualmente como pontos plausíveis na via aérea central superior, e 3 recusas:
+
+| Exame | Motivo da recusa automática |
+|---|---|
+| `radiopaedia_7_85703_0` | Nenhum candidato persistente na região pesquisada. Os cortes de índices altos exibem anatomia basal; há suspeita de inconsistência entre ordem anatômica e cabeçalho. Revisar orientação antes de usar uma semente manual para rastreamento. |
+| `radiopaedia_27_86410_0` | Região pequena concorrente com uma região central maior que o limite de área. |
+| `radiopaedia_36_86526_0` | Região central maior que o limite torna a seleção automática ambígua pelo critério conservador. |
+
+Essas 17 detecções não significam 17 remoções completas: em todas, o rastreamento parou antes da fatia central por seus critérios de continuidade, divisão, área ou deslocamento. Assim, não houve exclusão traqueal na fatia central nesses testes. A inspeção visual das sementes não substitui validação quantitativa e não confirma identificação da carina. Os 30 testes sintéticos/do pré-processamento passaram, incluindo prioridade manual, rejeição de ambiguidade e persistência em três cortes. A primeira versão da busca selecionou uma região inadequada em um Radiopaedia; a inspeção motivou a regra de recusa diante de uma alternativa central maior. Estes exames foram usados no desenvolvimento e não constituem um conjunto independente de avaliação.
+
+**Verificação 2,5D em 22/10/2026:** a CLI foi executada nos vinte exames, com Otsu e padrões, sem semente manual. Manteve 17 sementes aceitas e as três recusas acima. Nenhum rastreamento chegou à fatia central. Em comparação ao algoritmo anterior, avançou mais em 7 exames, parou no mesmo corte em 9 e parou antes em 1. Houve 12 eventos aceitos com redução de limiar e 0 eventos de bifurcação aceitos. Esses números medem comportamento, não acurácia anatômica. Os 34 testes locais passaram, incluindo bifurcação, parada independente, fusão ambígua, vazamento na borda da ROI e ponte removida por ajuste de limiar. A solução ainda não resolve automaticamente todos os exames. Relatório detalhado local: `conversa_local/relatorios/rastreamento_25d_2026-10-22/RELATORIO.md` (ignorado pelo Git).
+
+**Sequência na fatia exibida:** preparação 0–255 → limiarização → remoção dos componentes de borda → exclusão da traqueia rastreada → fechamento com raio em mm → preenchimento de buracos → exclusão novamente da região traqueal, para impedir sua reintrodução → exibição da fatia e da máscara final. Os rótulos da referência pulmonar não são usados para rastrear ou remover a traqueia; somente sua geometria é consultada.
 
 `--raio` aceita um número decimal em **milímetros**, com padrão **2 mm** (não mais 2 pixels). Zero desliga somente o fechamento; o preenchimento de buracos permanece ativo.
 

@@ -51,8 +51,8 @@ LARGURA_JANELA_PULMAO = 1500  # Limites: -1250 a 250 HU.
 def carregar_imagem(caminho):
     """Lê um NIfTI 3D e devolve o objeto NiBabel com eixos canonicalizados.
 
-    Os dados podem continuar disponíveis por proxy; não materializamos aqui
-    todo o volume. Unidades físicas desconhecidas permanecem desconhecidas.
+    Os dados podem continuar disponíveis por proxy quando não há reorientação.
+    A canonicalização do NiBabel pode materializar o volume ao inverter eixos. Unidades físicas desconhecidas permanecem desconhecidas.
     """
     caminho = Path(caminho)
     if not caminho.is_file():

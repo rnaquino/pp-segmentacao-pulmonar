@@ -34,18 +34,32 @@ def calcular_dice(mascara_a, mascara_b):
     intersecao = np.logical_and(mascara_a, mascara_b).sum()
     total = mascara_a.sum() + mascara_b.sum()
     return 1.0 if total == 0 else 2 * intersecao / total
-
-
+ 
 def validar_com_gabarito(mascara_esquerdo, mascara_direito, rotulos_referencia):
     gabarito_1 = rotulos_referencia == 1
     gabarito_2 = rotulos_referencia == 2
 
-    opcao_a = calcular_dice(mascara_esquerdo, gabarito_1) + calcular_dice(mascara_direito, gabarito_2)
-    opcao_b = calcular_dice(mascara_esquerdo, gabarito_2) + calcular_dice(mascara_direito, gabarito_1)
+    opcao_a = (
+        calcular_dice(mascara_esquerdo, gabarito_1)
+        + calcular_dice(mascara_direito, gabarito_2)
+    )
+
+    opcao_b = (
+        calcular_dice(mascara_esquerdo, gabarito_2)
+        + calcular_dice(mascara_direito, gabarito_1)
+    )
 
     if opcao_a >= opcao_b:
-        return calcular_dice(mascara_esquerdo, gabarito_1), calcular_dice(mascara_direito, gabarito_2)
-    return calcular_dice(mascara_esquerdo, gabarito_2), calcular_dice(mascara_direito, gabarito_1)
+        ref_esquerda, ref_direita = gabarito_1, gabarito_2
+    else:
+        ref_esquerda, ref_direita = gabarito_2, gabarito_1
+
+    return {
+        "dice_esquerdo": calcular_dice(mascara_esquerdo, ref_esquerda),
+        "dice_direito": calcular_dice(mascara_direito, ref_direita),
+        "iou_esquerdo": calcular_iou(mascara_esquerdo, ref_esquerda),
+        "iou_direito": calcular_iou(mascara_direito, ref_direita),
+    }
 
 
 def completar_pedacos_soltos(rotulos_finais, mascara_pulmao):
@@ -187,6 +201,37 @@ def main():
         ),
     }
 
+    # Verifica se as três técnicas geraram máscaras iguais
+    nomes = list(resultados.keys())
+
+    print("\n=== COMPARAÇÃO DAS MÁSCARAS GERADAS ===")
+
+    for i in range(len(nomes)):
+        for j in range(i + 1, len(nomes)):
+            nome_a = nomes[i]
+            nome_b = nomes[j]
+
+            esquerda_a, direita_a = resultados[nome_a]
+            esquerda_b, direita_b = resultados[nome_b]
+
+            if any(m is None for m in (
+                esquerda_a, direita_a, esquerda_b, direita_b
+            )):
+                print(f"{nome_a} x {nome_b}: comparação indisponível")
+                continue
+
+            diferenca_esquerda = np.count_nonzero(
+                esquerda_a != esquerda_b
+            )
+            diferenca_direita = np.count_nonzero(
+                direita_a != direita_b
+            )
+
+            print(f"\n{nome_a} x {nome_b}")
+            print(f"Pixels diferentes (esquerdo): {diferenca_esquerda}")
+            print(f"Pixels diferentes (direito):  {diferenca_direita}")
+
+
     print("Fatia:", k, "| Fatia vizinha usada:", k_vizinha)
     print()
 
@@ -198,10 +243,16 @@ def main():
             continue
 
         if rotulos_referencia is not None:
-            dice_esquerdo, dice_direito = validar_com_gabarito(
+            metricas = validar_com_gabarito(
                 mascara_esquerdo, mascara_direito, rotulos_referencia
             )
-            print(f"{nome}: Dice esquerdo={dice_esquerdo:.3f}  Dice direito={dice_direito:.3f}")
+
+            print(f"\nMétodo: {nome}")
+            print(f"Dice esquerdo: {metricas['dice_esquerdo']:.4f}")
+            print(f"Dice direito:  {metricas['dice_direito']:.4f}")
+            print(f"IoU esquerdo:  {metricas['iou_esquerdo']:.4f}")
+            print(f"IoU direito:   {metricas['iou_direito']:.4f}")
+
 
         axes[i, 0].imshow(mascara_esquerdo.T, cmap="gray", origin="lower")
         axes[i, 0].set_title(f"{nome} - esquerdo")

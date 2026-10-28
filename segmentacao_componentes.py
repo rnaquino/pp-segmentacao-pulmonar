@@ -1,19 +1,12 @@
-"""Compara limiar fixo e Otsu e remove componentes que tocam a borda.
+"""Mostra a remoção dos componentes de borda de uma máscara obtida por Otsu.
 
-Extrai uma fatia com src.preprocessing e produz duas máscaras: uma com
---limiar (padrão -400 HU) e outra com Otsu calculado nessa própria fatia.
-Rotula regiões conectadas por lados e diagonais e remove todas as regiões
-que alcançam qualquer borda. A função remover_componentes_da_borda também
-é reutilizada pelo exercício de morfologia.
+Exibe somente a fatia preparada em 0–255 e a máscara após a remoção.
+A conectividade inclui lados e diagonais. Regiões internas indesejadas
+podem permanecer: ainda não há seleção anatômica ou morfologia.
+Não importa outros scripts de segmentação.
 
-Exemplo para Coronacases em HU:
-    python segmentacao_componentes.py data/raw/coronacases_001.nii.gz --fatia 150 --limiar -400
-
-Sem --fatia, usa o corte central. Mostra seis painéis com a tomografia,
-as máscaras antes/depois da remoção e os componentes de Otsu em cores.
-As cores identificam regiões conectadas, não classes anatômicas.
-O processamento é 2D. As regiões internas restantes ainda são candidatas:
-não há seleção anatômica nem refinamento morfológico neste script.
+Exemplo:
+    python segmentacao_componentes.py data/raw/radiopaedia_10_85902_1.nii.gz
 """
 
 import argparse
@@ -22,11 +15,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from src.preprocessing import (
-    carregar_imagem, obter_indice_fatia, extrair_fatia, obter_metadados,
+    preparar_fatia, CENTRO_JANELA_PULMAO, LARGURA_JANELA_PULMAO,
 )
 from skimage.filters import threshold_otsu
 from skimage.measure import label
 from skimage.segmentation import clear_border
+from avaliar_segmentacao import calcular_dice, calcular_iou
 
 
 def remover_componentes_da_borda(mascara):
@@ -44,72 +38,55 @@ def remover_componentes_da_borda(mascara):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Compara limiares e remove o ar conectado à borda."
+        description="Remove componentes de borda da máscara de Otsu."
     )
-    parser.add_argument("imagem", help="Tomografia NIfTI em HU (Coronacases)")
-    parser.add_argument("--fatia", type=int, default=None)
-    parser.add_argument("--limiar", type=float, default=-400)
+    parser.add_argument("imagem", help="Tomografia NIfTI Coronacases ou Radiopaedia")
+    parser.add_argument("--fatia", type=int, default=None,
+                        help="Opcional; sem este argumento, usa a fatia central")
+    parser.add_argument("--fonte", default=None,
+                        choices=["Coronacases", "Radiopaedia"],
+                        help="Opcional; detectada pelos prefixos coronacases_ e radiopaedia_")
+    parser.add_argument("--centro", type=float, default=CENTRO_JANELA_PULMAO,
+                        help="Centro da janela em HU, somente para Coronacases")
+    parser.add_argument("--largura", type=float, default=LARGURA_JANELA_PULMAO,
+                        help="Largura da janela em HU, somente para Coronacases")
     args = parser.parse_args()
 
     try:
-        img = carregar_imagem(args.imagem)
-        k = obter_indice_fatia(img, args.fatia)
-        fatia = extrair_fatia(img, k)
+        dados = preparar_fatia(args.imagem, args.fonte, k=args.fatia,
+                               centro=args.centro, largura=args.largura)
+        k = dados["indice_fatia"]
+        fatia = dados["imagem_255"]
     except (OSError, ValueError) as erro:
         parser.error(str(erro))
-    if not np.isfinite(args.limiar):
-        parser.error("O limiar precisa ser finito.")
     if fatia.min() == fatia.max():
-        parser.error("A fatia é constante: escolha outra para comparar os métodos.")
+        parser.error("A fatia é constante: escolha outra para aplicar Otsu.")
 
-    # Duas estratégias aplicadas à mesma imagem original, sem janelamento numérico.
-    mascara_fixa = fatia < args.limiar
-    limiar_otsu = float(threshold_otsu(fatia))
-    mascara_otsu = fatia < limiar_otsu
+    limiar = float(threshold_otsu(fatia))
+    candidata = fatia < limiar
+    _, sem_borda = remover_componentes_da_borda(candidata)
 
-    _, fixa_sem_borda = remover_componentes_da_borda(mascara_fixa)
-    rotulos_otsu, otsu_sem_borda = remover_componentes_da_borda(mascara_otsu)
-
+    print(f"Fonte: {dados['source']}; escala de trabalho: 0–255")
     print("Fatia:", k)
-    print(f"Limiar fixo: {args.limiar:g} HU")
-    print(f"Limiar Otsu desta fatia: {limiar_otsu:.2f} HU")
-    for nome, antes, depois in [
-        ("Fixo", mascara_fixa, fixa_sem_borda),
-        ("Otsu", mascara_otsu, otsu_sem_borda),
-    ]:
-        print(f"{nome}: {np.count_nonzero(antes)} pixels antes; "
-              f"{np.count_nonzero(depois)} depois da remoção da borda.")
+    print(f"Limiar Otsu: {limiar:.2f} (0–255)")
+    print("Pixels antes da remoção:", np.count_nonzero(candidata))
+    print("Pixels após remover a borda:", np.count_nonzero(sem_borda))
     print("Regiões restantes ainda precisam de seleção anatômica e refinamento.")
 
-    sx, sy = obter_metadados(img)["spacing"][:2]
+    sx, sy = dados["metadados"]["spacing"][:2]
     aspecto = float(sy) / float(sx)
-    fig, axes = plt.subplots(2, 3, figsize=(13, 8))
-
-    axes[0, 0].imshow(
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+    axes[0].imshow(
         fatia.T, cmap="gray", origin="lower", aspect=aspecto,
-        interpolation="nearest", vmin=-1000, vmax=400,
+        interpolation="nearest", vmin=0, vmax=255,
     )
-    axes[0, 0].set_title(f"Tomografia — fatia {k}")
-
-    for ax, mascara, titulo in [
-        (axes[0, 1], mascara_fixa, f"Fixo: < {args.limiar:g} HU"),
-        (axes[0, 2], mascara_otsu, f"Otsu: < {limiar_otsu:.1f} HU"),
-        (axes[1, 1], fixa_sem_borda, "Fixo: componentes de borda removidos"),
-        (axes[1, 2], otsu_sem_borda, "Otsu: componentes de borda removidos"),
-    ]:
-        ax.imshow(mascara.T, cmap="gray", origin="lower", aspect=aspecto,
-                  interpolation="nearest", vmin=0, vmax=1)
-        ax.set_title(titulo, fontsize=10)
-
-    # As cores representam componentes conectados, não classes anatômicas.
-    cores = plt.get_cmap("tab20").copy()
-    cores.set_bad("black")
-    componentes = np.ma.masked_where(rotulos_otsu == 0, rotulos_otsu)
-    axes[1, 0].imshow(componentes.T, cmap=cores, origin="lower",
-                      aspect=aspecto, interpolation="nearest")
-    axes[1, 0].set_title("Componentes de Otsu antes da remoção", fontsize=10)
-
-    for ax in axes.flat:
+    axes[0].set_title(f"{dados['source']} — fatia {k} (0–255)")
+    axes[1].imshow(
+        sem_borda.T, cmap="gray", origin="lower", aspect=aspecto,
+        interpolation="nearest", vmin=0, vmax=1,
+    )
+    axes[1].set_title("Otsu: componentes de borda removidos")
+    for ax in axes:
         ax.axis("off")
     fig.tight_layout()
     plt.show()

@@ -110,3 +110,39 @@ Os scripts exibem figuras; ainda não salvam automaticamente uma tabela de métr
 
 O ambiente existente passou em `python -m pip check`. Os scripts foram executados no exame `coronacases_001`, fatia 150, com renderização sem interface gráfica; a refatoração preservou seus resultados numéricos. O pré-processamento foi exercitado também com dados sintéticos para escala NIfTI, índices, rótulos e alinhamento. Esses testes não representam avaliação do método nos vinte volumes nem confirmação de instalação em um ambiente novo.
 
+## Avaliação quantitativa — Dice e IoU
+
+O projeto inclui o script `avaliar_segmentacao.py`,
+responsável pela comparação entre máscaras produzidas
+pelos algoritmos de segmentação e máscaras de referência
+(ground truth).
+
+As métricas implementadas são:
+
+- Dice Similarity Coefficient (DSC): mede a sobreposição
+  entre as regiões segmentadas.
+- Intersection over Union (IoU/Jaccard): mede a razão
+  entre a interseção e a união das regiões segmentadas.
+
+Ambas variam de 0 a 1, sendo 1 a concordância perfeita.
+
+O script aceita máscaras NIfTI (.nii e .nii.gz) e
+NumPy (.npy), permitindo avaliar volumes inteiros
+ou fatias específicas.
+
+Exemplo de execução:
+
+    python avaliar_segmentacao.py \
+      caminho/mascara_predita.nii.gz \
+      caminho/mascara_referencia.nii.gz
+
+Para avaliar uma fatia específica, acrescente
+`--fatia N`, sendo N o índice da fatia.
+
+As máscaras devem possuir as mesmas dimensões,
+orientação e alinhamento espacial. Para arquivos
+NIfTI, a geometria é verificada automaticamente.
+
+As métricas serão utilizadas para comparar
+quantitativamente as segmentações obtidas pelos
+diferentes métodos implementados no projeto.

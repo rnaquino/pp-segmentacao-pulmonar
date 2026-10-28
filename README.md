@@ -1,3 +1,76 @@
+# Segmentação pulmonar em CT — pipeline 2D e experimentos
+
+> **Estado da entrega:** pipeline operacional de preparação e separação 2D; a reincorporação de regiões excluídas e a validação volumétrica completa pertencem à próxima etapa. **Não se trata de segmentação clinicamente validada.**
+
+## Comece aqui
+
+A interface para a próxima integrante é **`separacao_final.py`**. Ela aplica `pipeline_base.preparar_mascara_base` e depois `separacao_programacao_dinamica.separar_pulmoes`. Scripts experimentais permanecem na raiz por possuírem dependências cruzadas; a documentação fica em `docs/` e os testes em `tests/`.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+```
+
+Exemplo de geração de máscaras (ajuste os caminhos para os arquivos disponíveis localmente):
+
+```bash
+python separacao_final.py data/raw/coronacases_001.nii.gz \
+  --fatia 142 \
+  --fonte Coronacases \
+  --referencia data/masks/Lung_Mask/coronacases_001.nii.gz \
+  --raio 3 \
+  --saida resultados/coronacases_001_fatia_142.npz
+```
+
+O arquivo `.npz` contém `mascara_base`, `pulmao_esquerdo`, `pulmao_direito`, `mascara_combinada`, `status`, `metodo` e `raio_mm`. Os nomes de lados são **heurísticos**; confirme sua correspondência anatômica com as referências antes de relatar métricas por lado. A referência informada ao comando é usada para obter o espaçamento e **não** para determinar os pixels segmentados.
+
+Para comparar os métodos experimentais, use:
+
+```bash
+python comparar_metodos_separacao.py --help
+python diagnostico_exame_completo.py --help
+python inspecionar_metodos_separacao.py --help
+```
+
+Consulte [comandos e saídas](docs/execucao_e_entrega.md), [decisões metodológicas](docs/decisoes_metodologicas.md), [inventário e dependências](docs/inventario_arquivos.md) e [pré-processamento](docs/preprocessing.md).
+
+### Parâmetros fixados nesta etapa
+
+- Entrada: fatia axial 2D normalizada em 0–255 por `src/preprocessing.py`, com orientação RAS.
+- Máscara candidata: Otsu por fatia, remoção de componentes de borda e retenção dos dois componentes principais e fragmentos próximos.
+- Refinamento: fechamento com disco de **raio físico 3 mm**, seguido de preenchimento de buracos. Não confundir raio com diâmetro.
+- Separação: programação dinâmica como escolha operacional. Erosão condicional permanece como dependência para localizar sementes, e o método de maior intensidade permanece para comparação.
+- **Sem declaração de superioridade estatística** ou validação dos 20 volumes na versão entregue.
+
+### Organização
+
+```text
+.
+├── separacao_final.py            # interface da próxima etapa
+├── pipeline_base.py              # Otsu, isolamento, morfologia
+├── separacao_*.py                # método adotado e métodos comparativos
+├── segmentacao_*.py              # componentes, morfologia e históricos
+├── comparar_*.py, avaliar_*.py   # avaliação experimental
+├── diagnostico_*.py, inspecionar_*.py, ...
+├── src/preprocessing.py          # leitura e padronização NIfTI
+├── docs/                         # inventário, decisões e instruções
+├── tests/                        # testes sintéticos da interface
+├── data/                         # dados locais (não empacotados)
+└── resultados/                   # saídas locais (fora do Git)
+```
+
+### Limitações e compatibilidade
+
+Esta entrega preserva os scripts e nomes de importação existentes. Mover scripts para pacotes sem antes refatorar os imports poderia quebrar a reprodução dos experimentos. Alguns comandos históricos descritos adiante representam fases anteriores da pesquisa e **não** substituem o pipeline operacional documentado acima.
+
+---
+
+## Registro histórico de desenvolvimento
+
+O conteúdo a seguir foi mantido como registro técnico das etapas anteriores. Referências a trabalhos ainda pendentes e à antiga árvore de arquivos dizem respeito àquela fase; o estado de entrega vigente está no início deste documento.
+
 # Segmentação pulmonar por métodos clássicos
 
 Projeto acadêmico de segmentação pulmonar em tomografia computadorizada, usando limiarização, componentes conexos e operações morfológicas.

@@ -1,6 +1,6 @@
 # Inventário e política de limpeza
 
-O ZIP recebido tem 26 scripts `.py`, um módulo `src`, documentação e configuração. **Não deletar nem mover** os scripts antigos nesta entrega: há importações cruzadas entre módulos na raiz. Remover arquivos históricos sem revisar as dependências quebraria a reprodutibilidade.
+O ZIP recebido tem 26 scripts `.py`, um módulo `src`, documentação e configuração. **Preservar os scripts essenciais e suas dependências:** há importações cruzadas entre módulos na raiz. Remover arquivos históricos sem revisar as dependências quebraria a reprodutibilidade.
 
 ## Caminho de execução e dependências diretas
 - `separacao_final.py`: ponto de entrada para a colega.
@@ -13,13 +13,13 @@ O ZIP recebido tem 26 scripts `.py`, um módulo `src`, documentação e configur
 
 ## Avaliação e documentação reproduzíveis
 - `experimentos/comparar_metodos_separacao.py`: comparação quantitativa.
-- `inspecionar_metodos_separacao.py`: figuras das fatias 129, 130, 133 e 134.
+- `experimentos/inspecionar_metodos_separacao.py`: figuras das fatias 129, 130, 133 e 134.
 - `diagnosticos/diagnostico_exame_completo.py`, `diagnosticos/diagnosticar_conexao_pulmonar.py`, `diagnosticos/identificar_fatias_conectadas.py`: triagem de casos.
-- `comparar_isolamento.py`, `inspecionar_isolamento.py`, `verificar_etapas_isolamento.py`, `experimento_preenchimento.py`: observações anteriores do pipeline.
+- `experimentos/comparar_isolamento.py`, `diagnosticos/inspecionar_isolamento.py`, `diagnosticos/verificar_etapas_isolamento.py`, `experimentos/experimento_preenchimento.py`: observações anteriores do pipeline.
 - `segmentacao_otsu.py`, `segmentacao_limiar_fixo.py`, `segmentacao_esquerda_direita.py`, `visualizar_fatia.py`: etapas históricas/comparativas; preservar para artigo.
 
 ## Higiene segura
 - `__pycache__` e `src/.DS_Store`: removíveis, não versionar.
 - `.venv`, NIfTI, resultados gerados, PNGs e arquivos `.npz`: manter fora do Git.
 - A pasta `data/` não foi incluída no ZIP, por isso não se testou execução com os volumes reais nesta revisão.
-- Evitar reorganização física dos scripts antes de passar à colega. A reorganização em pacotes é uma tarefa posterior que exige testes de importação.
+- Os scripts auxiliares já foram organizados em experimentos/ e diagnosticos/. As importações foram verificadas após a movimentação. Novas movimentações exigem testes de dependências.

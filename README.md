@@ -31,7 +31,7 @@ Para comparar os métodos experimentais, use:
 ```bash
 python -m experimentos.comparar_metodos_separacao --help
 python -m diagnosticos.diagnostico_exame_completo --help
-python -m experimentos.inspecionar_metodos_separacao
+python -m experimentos.inspecionar_metodos_separacao --help
 ```
 
 Consulte [comandos e saídas](docs/execucao_e_entrega.md), [decisões metodológicas](docs/decisoes_metodologicas.md), [inventário e dependências](docs/inventario_arquivos.md) e [pré-processamento](docs/preprocessing.md).
@@ -52,8 +52,9 @@ Consulte [comandos e saídas](docs/execucao_e_entrega.md), [decisões metodológ
 ├── pipeline_base.py              # Otsu, isolamento, morfologia
 ├── separacao_*.py                # método adotado e métodos comparativos
 ├── segmentacao_*.py              # componentes, morfologia e históricos
-├── comparar_*.py, avaliar_*.py   # avaliação experimental
-├── diagnostico_*.py, inspecionar_*.py, ...
+├── avaliar_segmentacao.py        # métricas de avaliação
+├── experimentos/                 # comparações e inspeção visual
+├── diagnosticos/                 # diagnóstico de exames e fatias
 ├── src/preprocessing.py          # leitura e padronização NIfTI
 ├── docs/                         # inventário, decisões e instruções
 ├── tests/                        # testes sintéticos da interface

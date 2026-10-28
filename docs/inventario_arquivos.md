@@ -12,9 +12,9 @@ O ZIP recebido tem 26 scripts `.py`, um módulo `src`, documentação e configur
 - `segmentacao_tres_metodos.py`, `avaliar_segmentacao.py`: dependências transitivas importadas por scripts experimentais.
 
 ## Avaliação e documentação reproduzíveis
-- `comparar_metodos_separacao.py`: comparação quantitativa.
+- `experimentos/comparar_metodos_separacao.py`: comparação quantitativa.
 - `inspecionar_metodos_separacao.py`: figuras das fatias 129, 130, 133 e 134.
-- `diagnostico_exame_completo.py`, `diagnosticar_conexao_pulmonar.py`, `identificar_fatias_conectadas.py`: triagem de casos.
+- `diagnosticos/diagnostico_exame_completo.py`, `diagnosticos/diagnosticar_conexao_pulmonar.py`, `diagnosticos/identificar_fatias_conectadas.py`: triagem de casos.
 - `comparar_isolamento.py`, `inspecionar_isolamento.py`, `verificar_etapas_isolamento.py`, `experimento_preenchimento.py`: observações anteriores do pipeline.
 - `segmentacao_otsu.py`, `segmentacao_limiar_fixo.py`, `segmentacao_esquerda_direita.py`, `visualizar_fatia.py`: etapas históricas/comparativas; preservar para artigo.
 

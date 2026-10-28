@@ -1,6 +1,7 @@
 
 """Inspeção visual dos métodos de separação pulmonar em 2D."""
 
+import argparse
 from pathlib import Path
 from itertools import combinations
 
@@ -18,9 +19,17 @@ from separacao_programacao_dinamica import separar_pulmoes as dinamica
 from separacao_maior_intensidade import separar_pulmoes as intensidade
 
 
-IMAGEM = "data/raw/coronacases_002.nii.gz"
-REFERENCIA = "data/masks/Lung_Mask/coronacases_002.nii.gz"
-FATIAS = [129, 130, 133, 134]
+def ler_argumentos():
+    parser = argparse.ArgumentParser(
+        description="Inspeção visual dos métodos de separação pulmonar."
+    )
+    parser.add_argument("imagem", help="Arquivo NIfTI da tomografia.")
+    parser.add_argument("--referencia", required=True)
+    parser.add_argument("--fatias", nargs="+", type=int, required=True)
+    parser.add_argument("--saida", default="resultados/inspecao_separacao.png")
+    parser.add_argument("--raio", type=float, default=3.0)
+    parser.add_argument("--mostrar", action="store_true")
+    return parser.parse_args()
 
 
 def normalizar_resultado(resultado):
@@ -105,11 +114,12 @@ def diferenca(mascaras_a, mascaras_b):
 
 
 def main():
-    spacing = espacamento_referencia(IMAGEM, REFERENCIA)
+    args = ler_argumentos()
+    spacing = espacamento_referencia(args.imagem, args.referencia)
 
     fig, axes = plt.subplots(
-        len(FATIAS), 4,
-        figsize=(19, 4.5 * len(FATIAS)),
+        len(args.fatias), 4,
+        figsize=(19, 4.5 * len(args.fatias)),
         squeeze=False,
     )
 
@@ -119,11 +129,11 @@ def main():
         "Maior intensidade": lambda img, m: intensidade(img, m),
     }
 
-    for linha, k in enumerate(FATIAS):
+    for linha, k in enumerate(args.fatias):
         dados = preparar_fatia(
-            IMAGEM,
+            args.imagem,
             k=k,
-            caminho_mascara=REFERENCIA,
+            caminho_mascara=args.referencia,
         )
 
         imagem = dados["imagem_255"]
@@ -132,7 +142,7 @@ def main():
         mascara = preparar_mascara_base(
             imagem,
             spacing=spacing,
-            raio_mm=3.0,
+            raio_mm=args.raio,
         )
 
         n_componentes = int(
@@ -184,20 +194,22 @@ def main():
             )
 
     fig.suptitle(
-        "Comparação visual dos métodos de separação — Coronacases 002",
+        f"Comparação visual dos métodos — {Path(args.imagem).name}",
         fontsize=16,
     )
 
     plt.tight_layout(rect=[0, 0, 1, 0.97])
 
-    destino = Path("resultados/inspecao_separacao_002.png")
+    destino = Path(args.saida)
     destino.parent.mkdir(parents=True, exist_ok=True)
 
     plt.savefig(destino, dpi=180, bbox_inches="tight")
 
     print(f"\nFigura salva em: {destino}")
 
-    plt.show()
+    if args.mostrar:
+        plt.show()
+    plt.close(fig)
 
 
 if __name__ == "__main__":

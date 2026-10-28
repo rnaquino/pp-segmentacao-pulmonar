@@ -29,9 +29,9 @@ O arquivo `.npz` contém `mascara_base`, `pulmao_esquerdo`, `pulmao_direito`, `m
 Para comparar os métodos experimentais, use:
 
 ```bash
-python comparar_metodos_separacao.py --help
-python diagnostico_exame_completo.py --help
-python inspecionar_metodos_separacao.py --help
+python -m experimentos.comparar_metodos_separacao --help
+python -m diagnosticos.diagnostico_exame_completo --help
+python -m experimentos.inspecionar_metodos_separacao
 ```
 
 Consulte [comandos e saídas](docs/execucao_e_entrega.md), [decisões metodológicas](docs/decisoes_metodologicas.md), [inventário e dependências](docs/inventario_arquivos.md) e [pré-processamento](docs/preprocessing.md).
@@ -351,3 +351,16 @@ NIfTI, a geometria é verificada automaticamente.
 As métricas serão utilizadas para comparar
 quantitativamente as segmentações obtidas pelos
 diferentes métodos implementados no projeto.
+
+### Comparação visual dos métodos de separação
+
+Para comparar os três métodos nas fatias 129, 130, 133 e 134 do Coronacases 002:
+
+    python -m experimentos.inspecionar_metodos_separacao data/raw/coronacases_002.nii.gz --referencia data/masks/Lung_Mask/coronacases_002.nii.gz --fatias 129 130 133 134 --raio 3 --saida resultados/inspecao_separacao_002.png
+
+O parâmetro `--mostrar` exibe a figura na tela. Sem ele, a figura é apenas salva.
+
+Para consultar os parâmetros disponíveis:
+
+    python -m experimentos.inspecionar_metodos_separacao --help
+

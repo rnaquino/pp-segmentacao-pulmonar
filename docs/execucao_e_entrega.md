@@ -31,10 +31,10 @@ A próxima etapa recebe estas máscaras e a combinada, e é responsável pela **
 
 ## Métricas, imagens e comparações
 
-- `python comparar_metodos_separacao.py --help` lista os parâmetros da comparação quantitativa em CSV entre erosão condicional, programação dinâmica e caminho de maior intensidade.
+- `python -m experimentos.comparar_metodos_separacao --help` lista os parâmetros da comparação quantitativa em CSV entre erosão condicional, programação dinâmica e caminho de maior intensidade.
 - `python avaliar_segmentacao.py --help` mostra como avaliar Dice e IoU com referência, quando disponíveis máscaras e volumes alinhados.
-- `python inspecionar_metodos_separacao.py --help` disponibiliza a inspeção visual de métodos e fatias selecionadas.
-- `python diagnostico_exame_completo.py --help` permite inspecionar casos ao longo do exame.
+- `python -m experimentos.inspecionar_metodos_separacao` disponibiliza a inspeção visual de métodos e fatias selecionadas.
+- `python -m diagnosticos.diagnostico_exame_completo --help` permite inspecionar casos ao longo do exame.
 
 As figuras de scripts que usam `plt.show()` exigem sessão gráfica ou ajuste explícito do backend; **nem todos os scripts salvam figuras automaticamente**. Registre a revisão Git, o exame, a fatia, os parâmetros, os resultados e os erros em cada comparação. Não se deve afirmar que foi calculada distância de Hausdorff pelo comparador atual, que reporta Dice e IoU.
 

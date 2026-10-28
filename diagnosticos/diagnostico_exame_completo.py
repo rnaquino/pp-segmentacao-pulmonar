@@ -14,7 +14,7 @@ from src.preprocessing import (
     verificar_alinhamento,
 )
 
-from diagnosticar_conexao_pulmonar import (
+from diagnosticos.diagnosticar_conexao_pulmonar import (
     preparar_mascara,
     diagnosticar,
 )

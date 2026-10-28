@@ -64,55 +64,55 @@ def main():
         for k in grupo:
             regiao_por_fatia[int(k)] = nome
 
-        registros = []
+    registros = []
 
-        print(f"\nTotal de fatias: {total_fatias}")
+    print(f"\nTotal de fatias: {total_fatias}")
 
-        for k in range(total_fatias):
-            fatia = extrair_fatia(imagem, k)
-            rotulos_ref = extrair_fatia(referencia, k)
+    for k in range(total_fatias):
+        fatia = extrair_fatia(imagem, k)
+        rotulos_ref = extrair_fatia(referencia, k)
 
-            if not np.any(np.isin(rotulos_ref, [1, 2])):
-                continue
+        if not np.any(np.isin(rotulos_ref, [1, 2])):
+            continue
 
-            # Mesmo preparo de intensidade usado no projeto
-            dados = preparar_intensidades(fatia, fonte)
-            imagem_255 = dados["imagem_255"]
+        # Mesmo preparo de intensidade usado no projeto
+        dados = preparar_intensidades(fatia, fonte)
+        imagem_255 = dados["imagem_255"]
 
-            mascara = preparar_mascara(imagem_255)
-            resultado = diagnosticar(mascara, rotulos_ref)
+        mascara = preparar_mascara(imagem_255)
+        resultado = diagnosticar(mascara, rotulos_ref)
 
-            if k not in regiao_por_fatia:
-                print(f"ATENÇÃO: fatia {k} sem região definida")
-                
-            registro = {
+        if k not in regiao_por_fatia:
+            print(f"ATENÇÃO: fatia {k} sem região definida")
+            
+        registro = {
 
-                "exame": Path(args.imagem).name,
-                "fatia": k,
-                "situacao": resultado["situacao"],
-                "componentes": resultado["componentes"],
-                "componente_1": resultado["componente_1"],
-                "componente_2": resultado["componente_2"],
-                "cobertura_1": resultado["cobertura_1"],
-                "cobertura_2": resultado["cobertura_2"],
-                "concentracao_1": resultado["concentracao_1"],
-                "concentracao_2": resultado["concentracao_2"],
-                "regiao": regiao_por_fatia.get(k, "nao_classificada"),
-            }
+            "exame": Path(args.imagem).name,
+            "fatia": k,
+            "situacao": resultado["situacao"],
+            "componentes": resultado["componentes"],
+            "componente_1": resultado["componente_1"],
+            "componente_2": resultado["componente_2"],
+            "cobertura_1": resultado["cobertura_1"],
+            "cobertura_2": resultado["cobertura_2"],
+            "concentracao_1": resultado["concentracao_1"],
+            "concentracao_2": resultado["concentracao_2"],
+            "regiao": regiao_por_fatia.get(k, "nao_classificada"),
+        }
 
-            registros.append(registro)
+        registros.append(registro)
 
-            if resultado["situacao"] == "possivel_conexao":
-                print(f"Possível conexão na fatia {k}")
+        if resultado["situacao"] == "possivel_conexao":
+            print(f"Possível conexão na fatia {k}")
 
-            if k % 25 == 0:
-                print(f"Processando fatia {k}/{total_fatias - 1}")
+        if k % 25 == 0:
+            print(f"Processando fatia {k}/{total_fatias - 1}")
 
-        if not registros:
-            print("Nenhuma fatia com referência pulmonar encontrada.")
-            return
+    if not registros:
+        print("Nenhuma fatia com referência pulmonar encontrada.")
+        return
 
-        destino = Path(args.saida)
+    destino = Path(args.saida)
     destino.parent.mkdir(parents=True, exist_ok=True)
 
     with destino.open("w", newline="", encoding="utf-8") as arquivo:

@@ -14,6 +14,7 @@ import argparse
 
 import matplotlib.pyplot as plt
 import numpy as np
+from avaliar_segmentacao import calcular_dice, calcular_iou
 
 from src.preprocessing import (
     preparar_fatia, CENTRO_JANELA_PULMAO, LARGURA_JANELA_PULMAO,

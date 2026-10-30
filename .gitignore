@@ -25,9 +25,11 @@ Thumbs.db
 
 # Resultados locais dos experimentos
 /results/
+/resultados/
+*.npz
 
-# Testes locais
-/tests/
+
+# Testes automatizados versionados em tests/
 
 # Arquivos temporários e relatórios das conversas
 /conversa_local/

@@ -20,6 +20,7 @@ from src.preprocessing import (
 from skimage.filters import threshold_otsu
 from skimage.measure import label
 from skimage.segmentation import clear_border
+from avaliar_segmentacao import calcular_dice, calcular_iou
 
 
 def remover_componentes_da_borda(mascara):

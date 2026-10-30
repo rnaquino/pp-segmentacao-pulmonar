@@ -21,6 +21,7 @@ Uso:
 import argparse
 import json
 from pathlib import Path
+from typing_extensions import final
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,6 +36,7 @@ from skimage.filters import threshold_otsu
 
 from skimage.measure import label, regionprops
 from skimage.segmentation import clear_border
+from avaliar_segmentacao import calcular_dice, calcular_iou
 
 
 def remover_componentes_da_borda(mascara):

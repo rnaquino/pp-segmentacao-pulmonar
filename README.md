@@ -1,3 +1,77 @@
+# Segmentação pulmonar em CT — pipeline 2D e experimentos
+
+> **Estado da entrega:** pipeline operacional de preparação e separação 2D; a reincorporação de regiões excluídas e a validação volumétrica completa pertencem à próxima etapa. **Não se trata de segmentação clinicamente validada.**
+
+## Comece aqui
+
+A interface para a próxima integrante é **`separacao_final.py`**. Ela aplica `pipeline_base.preparar_mascara_base` e depois `separacao_programacao_dinamica.separar_pulmoes`. Scripts experimentais permanecem na raiz por possuírem dependências cruzadas; a documentação fica em `docs/` e os testes em `tests/`.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+```
+
+Exemplo de geração de máscaras (ajuste os caminhos para os arquivos disponíveis localmente):
+
+```bash
+python separacao_final.py data/raw/coronacases_001.nii.gz \
+  --fatia 142 \
+  --fonte Coronacases \
+  --referencia data/masks/Lung_Mask/coronacases_001.nii.gz \
+  --raio 3 \
+  --saida resultados/coronacases_001_fatia_142.npz
+```
+
+O arquivo `.npz` contém `mascara_base`, `pulmao_esquerdo`, `pulmao_direito`, `mascara_combinada`, `status`, `metodo` e `raio_mm`. Os nomes de lados são **heurísticos**; confirme sua correspondência anatômica com as referências antes de relatar métricas por lado. A referência informada ao comando é usada para obter o espaçamento e **não** para determinar os pixels segmentados.
+
+Para comparar os métodos experimentais, use:
+
+```bash
+python -m experimentos.comparar_metodos_separacao --help
+python -m diagnosticos.diagnostico_exame_completo --help
+python -m experimentos.inspecionar_metodos_separacao --help
+```
+
+Consulte [comandos e saídas](docs/execucao_e_entrega.md), [decisões metodológicas](docs/decisoes_metodologicas.md), [inventário e dependências](docs/inventario_arquivos.md) e [pré-processamento](docs/preprocessing.md).
+
+### Parâmetros fixados nesta etapa
+
+- Entrada: fatia axial 2D normalizada em 0–255 por `src/preprocessing.py`, com orientação RAS.
+- Máscara candidata: Otsu por fatia, remoção de componentes de borda e retenção dos dois componentes principais e fragmentos próximos.
+- Refinamento: fechamento com disco de **raio físico 3 mm**, seguido de preenchimento de buracos. Não confundir raio com diâmetro.
+- Separação: programação dinâmica como escolha operacional. Erosão condicional permanece como dependência para localizar sementes, e o método de maior intensidade permanece para comparação.
+- **Sem declaração de superioridade estatística** ou validação dos 20 volumes na versão entregue.
+
+### Organização
+
+```text
+.
+├── separacao_final.py            # interface da próxima etapa
+├── pipeline_base.py              # Otsu, isolamento, morfologia
+├── separacao_*.py                # método adotado e métodos comparativos
+├── segmentacao_*.py              # componentes, morfologia e históricos
+├── avaliar_segmentacao.py        # métricas de avaliação
+├── experimentos/                 # comparações e inspeção visual
+├── diagnosticos/                 # diagnóstico de exames e fatias
+├── src/preprocessing.py          # leitura e padronização NIfTI
+├── docs/                         # inventário, decisões e instruções
+├── tests/                        # testes sintéticos da interface
+├── data/                         # dados locais (não empacotados)
+└── resultados/                   # saídas locais (fora do Git)
+```
+
+### Limitações e compatibilidade
+
+Esta entrega preserva os scripts e nomes de importação existentes. Mover scripts para pacotes sem antes refatorar os imports poderia quebrar a reprodução dos experimentos. Alguns comandos históricos descritos adiante representam fases anteriores da pesquisa e **não** substituem o pipeline operacional documentado acima.
+
+---
+
+## Registro histórico de desenvolvimento
+
+O conteúdo a seguir foi mantido como registro técnico das etapas anteriores. Referências a trabalhos ainda pendentes e à antiga árvore de arquivos dizem respeito àquela fase; o estado de entrega vigente está no início deste documento.
+
 # Segmentação pulmonar por métodos clássicos
 
 Projeto acadêmico de segmentação pulmonar em tomografia computadorizada, usando limiarização, componentes conexos e operações morfológicas.
@@ -277,4 +351,53 @@ Os scripts exibem figuras; ainda não salvam automaticamente uma tabela de métr
 ## Verificações realizadas
 
 O ambiente existente passou em `python -m pip check`. Na versão anterior, os scripts foram executados no exame `coronacases_001`, fatia 150, com renderização sem interface gráfica; aquela refatoração preservou seus resultados numéricos. A mudança atual de escala inclui recorte da janela antes de Otsu e pode alterar seus resultados. O pré-processamento foi exercitado também com dados sintéticos para escala NIfTI, índices, rótulos e alinhamento. Esses testes não representam avaliação do método nos vinte volumes nem confirmação de instalação em um ambiente novo.
+
+## Avaliação quantitativa — Dice e IoU
+
+O projeto inclui o script `avaliar_segmentacao.py`,
+responsável pela comparação entre máscaras produzidas
+pelos algoritmos de segmentação e máscaras de referência
+(ground truth).
+
+As métricas implementadas são:
+
+- Dice Similarity Coefficient (DSC): mede a sobreposição
+  entre as regiões segmentadas.
+- Intersection over Union (IoU/Jaccard): mede a razão
+  entre a interseção e a união das regiões segmentadas.
+
+Ambas variam de 0 a 1, sendo 1 a concordância perfeita.
+
+O script aceita máscaras NIfTI (.nii e .nii.gz) e
+NumPy (.npy), permitindo avaliar volumes inteiros
+ou fatias específicas.
+
+Exemplo de execução:
+
+    python avaliar_segmentacao.py \
+      caminho/mascara_predita.nii.gz \
+      caminho/mascara_referencia.nii.gz
+
+Para avaliar uma fatia específica, acrescente
+`--fatia N`, sendo N o índice da fatia.
+
+As máscaras devem possuir as mesmas dimensões,
+orientação e alinhamento espacial. Para arquivos
+NIfTI, a geometria é verificada automaticamente.
+
+As métricas serão utilizadas para comparar
+quantitativamente as segmentações obtidas pelos
+diferentes métodos implementados no projeto.
+
+### Comparação visual dos métodos de separação
+
+Para comparar os três métodos nas fatias 129, 130, 133 e 134 do Coronacases 002:
+
+    python -m experimentos.inspecionar_metodos_separacao data/raw/coronacases_002.nii.gz --referencia data/masks/Lung_Mask/coronacases_002.nii.gz --fatias 129 130 133 134 --raio 3 --saida resultados/inspecao_separacao_002.png
+
+O parâmetro `--mostrar` exibe a figura na tela. Sem ele, a figura é apenas salva.
+
+Para consultar os parâmetros disponíveis:
+
+    python -m experimentos.inspecionar_metodos_separacao --help
 
